@@ -29,6 +29,37 @@ table_drag = {
   bindingEvents : function() {
     $('.js-add-table').on('click', this.addTablePosition);
     $("#searchDB").on('click', this.searchSubmit);
+    $('#deleteModal').on('show.bs.modal', this.deleteTableModal);
+  },
+
+  deleteTableModal : function(e) {
+    var $button = $(e.relatedTarget);
+    var $modal = $(this).parents(".modal");
+    var $card = $($button.parents(".js-card")[0]);
+    var $conns = $card.find(".divTableRow.jtk-connected");
+    var $anchors = $card.find(".divTableRow.jtk-endpoint-anchor");
+
+    $(".js-modal-delete").off("click");
+    $(".js-modal-delete").click(function() {
+      $conns.each(function(i, e) {
+        var itemId = $(e).attr("id");
+        jsPlumb.getConnections({source: itemId}).forEach(function(conn) {
+          table_drag.deleteLine(conn);
+        });
+        jsPlumb.getConnections({target: itemId}).forEach(function(conn) {
+          table_drag.deleteLine(conn);
+        });
+
+      });
+
+      $anchors.each(function(i, e) {
+        var itemId = $(e).attr("id");
+        jsPlumb.remove(itemId);
+      });
+
+      $button.parents(".js-card")[0].remove();
+      $('#deleteModal').modal("hide");
+    });
   },
 
   makeTable : function(tableInput, position, no) {
