@@ -1,4 +1,80 @@
 table_drag = {
+  TABLES: [
+    {
+      name: "inputTable",
+      data: [
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        },
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        },
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        },
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        },
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        }
+      ]
+    },
+    {
+      name: "outputTable",
+      data: [
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        },
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        },
+        {
+          CONVERT_ID: "1010001",
+          SEQUENCE: 1805680,
+          ID: "21010001",
+          NAME: "colin1",
+          TYPE: "string",
+          DESCRIPTION: "Embedding."
+        }
+      ]
+    }
+  ],
   connStatus : {"connections": {}},
   common : {
     isSource: true,
@@ -22,14 +98,129 @@ table_drag = {
   },
 
   initStatus : function() {
-    // this.initTable();
     this.initJsPlumb();
+    this.initTableNames();
   },
 
   bindingEvents : function() {
     $('.js-add-table').on('click', this.addTablePosition);
-    $("#searchDB").on('click', this.searchSubmit);
     $('#deleteModal').on('show.bs.modal', this.deleteTableModal);
+    $('#searchModal').on('click', '.js-submit-form', this.loadTables);
+  },
+
+  initTableNames : function() {
+    // $.ajax({
+    //   type: "GET",
+    //   url: "/scan_tables",
+    //   success: function(data) {
+    //     console.log(data);
+    //   }
+    // });
+
+    var res = {
+      tables: [
+        {
+          table_name: "inputTable"
+        },
+        {
+          table_name: "outputTable"
+        }
+      ]
+    };
+    if (res.tables && res.tables.length > 0) {
+      var groupHtml = "";
+      res.tables.forEach(function(table) {
+        var name = table.table_name;
+        groupHtml += "<label for='" + name + "' class='col-form-label'>" + name + "</label>";
+        groupHtml += "<input type='checkbox' class='form-control js-table-name' id='" + name + "'>";
+      });
+
+      $("#searchModal .js-tables-group").html(groupHtml);
+    }
+  },
+
+  loadTables : function() {
+    var names =[];
+    $("#searchModal .js-tables-group .js-table-name").each(function(i, e) {
+      if( $(e).is( ":checked" )) {
+        names.push($(e).attr("id"));
+      }
+    });
+    var tables = table_drag.readTables(names);
+
+    var position = $(this).data("position");
+    var anchor = (position === "left") ? "Right" : "Left";
+    var $field = $(".drawCanvas ." + position + "-field");
+    var no = $field.find(".divTable").length
+
+    table_drag.buildTableTemplate(tables, position, no);
+  },
+
+  readTables : function(names) {
+    var tables = [];
+    names.forEach(function(e) {
+      table_drag.TABLES.forEach(function(ele) {
+        if (ele.name == e) {
+          tables.push(ele);
+        }
+      });
+    });
+
+    return tables
+  },
+
+  buildTableTemplate : function(tables, position, no) {
+    var key = position + "-table" + no;
+    var anchor = (position === "left") ? "Right" : "Left";
+    var $field = $(".drawCanvas ." + position + "-field");
+    table_drag.connStatus[key] = {};
+
+    var newTables = [];
+    tables.forEach(function(t) {
+      var $card = $($("#js-card-template").html());
+      var $table = $card.find(".divTable");
+      var $header = $table.find(".divTableHeader");
+      var rows = t.data;
+      var firstRow = rows[0];
+      var ths = "";
+      var columns = [];
+      for(var column in firstRow) {
+        columns << column;
+        ths += "<div class = 'divTableTh'>" + column + "</div>";
+      }
+      $header.append($(ths));
+
+      // add td
+      for ( var row_i = 0; row_i < rows.length; row_i++) {
+        var keyIndex = key + "_" + row_i;
+        var $row = $("<div class = 'divTableRow' id='" + keyIndex + "'></div>");
+
+        for ( var col in rows[row_i]) {
+          $row.append('<div id = "' + keyIndex + "_" + columns.indexOf(col) +
+            '" class = "divTableTd"> ' + rows[row_i][col] + '</div>');
+        }
+
+        $table.append($row);
+        table_drag.connStatus[key][keyIndex] = {"text": rows[row_i], "connection": []};
+      }
+
+      $table.addClass("table-" + position);
+      console.log(table_drag.connStatus);
+
+      $card.find(".js-card-title").text(t.name);
+      $card.find(".js-edit-btn").text("編集");
+      $card.find(".js-remove-btn").text("削除");
+
+      $field.append($card);
+      $card.find(".divTableRow").each(function(i, e) {
+        var id = $(e).attr('id');
+        jsPlumb.addEndpoint(id, {
+          anchor: [anchor]
+        }, table_drag.common);
+      });
+    });
+
+    $("#searchModal").modal("hide");
   },
 
   deleteTableModal : function(e) {
@@ -59,68 +250,6 @@ table_drag = {
 
       $button.parents(".js-card")[0].remove();
       $('#deleteModal').modal("hide");
-    });
-  },
-
-  makeTable : function(tableInput, position, no) {
-    var key = position + "-table" + no;
-    table_drag.connStatus[key] = {};
-
-    var $card = $($("#js-card-template").html());
-    var $table = $card.find(".divTable");
-
-    var rowNo = tableInput.detail[0].length;
-    var $header = $table.find(".divTableHeader");
-    var $th = $header.find(".divTableTh");
-    var th = $header.html();
-    var ths = "";
-    $th.text(tableInput.name);
-    // add row
-    for (i = 1; i < rowNo; i++) {
-      ths += th;
-    }
-    $header.append($(ths));
-
-    // add td
-    for (var index in tableInput.detail) {
-      var row = tableInput.detail[index];
-      var keyIndex = key + "_" + index;
-      var $row = $("<div class = 'divTableRow' id='" + keyIndex + "'></div>");
-
-      for (var tdIdx in row) {
-        $row.append('<div id = "' + keyIndex + "_" + tdIdx +
-          '" class = "divTableTd"> ' + row[tdIdx] + '</div>');
-      }
-
-      $table.append($row);
-      table_drag.connStatus[key][keyIndex] = {"text": row, "connection": []};
-    }
-    $table.addClass("table-" + position);
-    console.log(table_drag.connStatus);
-
-    $card.find(".js-edit-btn").text("編集");
-    $card.find(".js-remove-btn").text("削除");
-
-    return $card;
-  },
-
-  searchSubmit : function() {
-    var position = $(this).data("position");
-    var anchor = (position === "left") ? "Right" : "Left";
-
-    var tableInfo = table_drag.searchDB();
-    var $field = $(".drawCanvas ." + position + "-field");
-
-    var no = $field.find(".divTable").length
-    var newTable = table_drag.makeTable(tableInfo, position, no);
-    $field.append(newTable);
-    $("#searchModal").modal("hide");
-
-    newTable.find(".divTableRow").each(function(i, e) {
-      var id = $(e).attr('id');
-      jsPlumb.addEndpoint(id, {
-        anchor: [anchor]
-      }, table_drag.common);
     });
   },
 

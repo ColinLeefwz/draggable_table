@@ -33,15 +33,15 @@
         <div id="js-card-template" style="display: none;">
           <div class="table-card js-card">
             <div class="table-card-body">
+              <h5 class="card-title js-card-title"></h5>
               <div class="divTable">
                 <div class='divTableHeader'>
-                  <div class = "divTableTh"></div>
                 </div>
               </div>
             </div>
             <div class="table-card-footer">
-              <a href="#" class="btn btn-primary js-edit-btn"></a>
-              <a href="#" class="btn btn-danger js-remove-btn"></a>
+              <a href="#" class="btn btn-primary js-edit-btn" data-toggle="modal" data-target="#editModal"></a>
+              <a href="#" class="btn btn-danger js-remove-btn" data-toggle="modal" data-target="#deleteModal"></a>
             </div>
           </div>
         </div>
@@ -57,18 +57,12 @@
           </div>
           <div class="modal-body">
             <form>
-              <div class="form-group">
-                <label for="recipient-name" class="col-form-label">Recipient:</label>
-                <input type="text" class="form-control" id="recipient-name">
-              </div>
-              <div class="form-group">
-                <label for="message-text" class="col-form-label">Message:</label>
-                <textarea class="form-control" id="message-text"></textarea>
+              <div class="form-group js-tables-group">
               </div>
             </form>
           </div>
           <div class="modal-footer">
-            <button id="searchDB" type="button" data-position="left" class="btn btn-primary">Search</button>
+            <button id="searchDB" type="button" data-position="left" class="btn btn-primary js-submit-form">Search</button>
           </div>
         </div>
       </div>
@@ -88,6 +82,45 @@
           </div>
           <div class="modal-footer">
             <button id="confirmOk" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="editModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Comfirm</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p id="confirmMsg"></p>
+          </div>
+          <div class="modal-footer">
+            <button id="confirmOk" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="deleteModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Comfirm</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p id="confirmMsg"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary js-modal-delete">Delete</button>
+            <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
           </div>
         </div>
       </div>
