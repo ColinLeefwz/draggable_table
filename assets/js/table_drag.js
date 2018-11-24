@@ -113,13 +113,23 @@ table_drag = {
   },
 
   initTableNames : function() {
-    // $.ajax({
-    //   type: "GET",
-    //   url: "/scan_tables",
-    //   success: function(data) {
-    //     console.log(data);
-    //   }
-    // });
+    $.ajax({
+      type: "GET",
+      url: "./DataMapping.aspx/GetInputTableList",
+      success: function(res) {
+        console.log("GetInputTableList");
+        console.log(res);
+      }
+    });
+
+    $.ajax({
+      type: "GET",
+      url: "./DataMapping.aspx/GetOutputTableList",
+      success: function(res) {
+        console.log("GetOutTableList");
+        console.log(res);
+      }
+    });
 
     var res = {
       input_tables: [
@@ -205,8 +215,10 @@ table_drag = {
 
       // add td
       for ( var row_i = 0; row_i < rows.length; row_i++) {
+        var tableId = rows[row_i].ID;
+        var tableSeq = rows[row_i].SEQUENCE;
         var keyIndex = key + "_" + row_i;
-        var $row = $("<div class = 'divTableRow' id='" + keyIndex + "'></div>");
+        var $row = $("<div class = 'divTableRow' data-table-id='" + tableId + "' data-table-seq='" + tableSeq + "' id='" + keyIndex + "'></div>");
 
         for ( var col in rows[row_i]) {
           $row.append('<div id = "' + keyIndex + "_" + columns.indexOf(col) +
@@ -364,20 +376,40 @@ table_drag = {
 
         var tableKeySource = source.split("_")[0];
         var tableConnSource = table_drag.connStatus[tableKeySource][source].connection;
-        if ($.inArray(target, tableConnSource) < 0) {
+        if (tableConnSource.indexOf(target) < 0) {
           tableConnSource.push(target);
         }
 
         var tableKeyTarget = target.split("_")[0];
         var tableConnTarget = table_drag.connStatus[tableKeyTarget][target].connection;
-        if ($.inArray(source, tableConnTarget) < 0) {
+        if (tableConnTarget.indexOf(source) < 0) {
           tableConnTarget.push(source);
         }
+        var $sourceInfo = $(info.source);
+        var $targetInfo = $(info.target);
+        // debugger;
+        // $.ajax({
+        //   type: "POST",
+        //   url: "/add_conn",
+        //   data: {
+        //     editId: "1000690",
+        //     sourceId: $sourceInfo.data["table-id"],
+        //     sourceSeq: $sourceInfo.data["table-seq"],
+        //     targetId: $targetInfo.data["table-id"],
+        //     targetSeq: $targetInfo.data["table-seq"]
+        //   },
+        //   success: function(res) {
+        //     console.log(res);
+        //   }
+        // });
+
         console.log(table_drag.connStatus);
       });
 
       $(".tableLeft .divTableRow").each(function() {
         var id = $(this).attr('id');
+        var tableId = $(this).attr('[data-table-id]');
+        var tableSeq = $(this).attr('[data-table-seq]');
         jsPlumb.addEndpoint(id, {
           anchor: 'Right'
         }, table_drag.common);
@@ -385,6 +417,8 @@ table_drag = {
 
       $(".tableRight .divTableRow").each(function() {
         var id = $(this).attr('id');
+        var tableId = $(this).attr('[data-table-id]');
+        var tableSeq = $(this).attr('[data-table-seq]');
         jsPlumb.addEndpoint(id, {
           anchor: 'Left'
         }, table_drag.common);
@@ -405,6 +439,23 @@ table_drag = {
 
     console.log(this.connStatus);
 
+    var $sourceInfo = $("#" + sourceId);
+    var $targetInfo = $("#" + targetId);
+    // debugger;
+    // $.ajax({
+    //   type: "DELETE",
+    //   url: "/delete_conn",
+    //   data: {
+    //     editId: "1000690",
+    //     sourceId: $sourceInfo.data["table-id"],
+    //     sourceSeq: $sourceInfo.data["table-seq"],
+    //     targetId: $targetInfo.data["table-id"],
+    //     targetSeq: $targetInfo.data["table-seq"]
+    //   },
+    //   success: function(res) {
+    //     console.log(res);
+    //   }
+    // });
     jsPlumb.deleteConnection(connection);
   },
 
