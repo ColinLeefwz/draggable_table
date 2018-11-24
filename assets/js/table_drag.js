@@ -1,5 +1,5 @@
 table_drag = {
-  TABLES: [
+  INPUT_TABLES: [
     {
       name: "inputTable",
       data: [
@@ -44,7 +44,9 @@ table_drag = {
           DESCRIPTION: "Embedding."
         }
       ]
-    },
+    }
+  ],
+  OUTPUT_TABLES: [
     {
       name: "outputTable",
       data: [
@@ -105,7 +107,9 @@ table_drag = {
   bindingEvents : function() {
     $('.js-add-table').on('click', this.addTablePosition);
     $('#deleteModal').on('show.bs.modal', this.deleteTableModal);
-    $('#searchModal').on('click', '.js-submit-form', this.loadTables);
+    $('#editModal').on('show.bs.modal', this.editTableModal);
+    $('#saveModal').on('show.bs.modal', this.saveTableModal);
+    $('.search-modal').on('click', '.js-submit-form', this.loadTables);
   },
 
   initTableNames : function() {
@@ -118,48 +122,57 @@ table_drag = {
     // });
 
     var res = {
-      tables: [
+      input_tables: [
         {
           table_name: "inputTable"
-        },
+        }
+      ],
+      output_tables: [
         {
           table_name: "outputTable"
         }
       ]
     };
-    if (res.tables && res.tables.length > 0) {
+
+    table_drag.loadTablesTemplate(res.input_tables, "left");
+    table_drag.loadTablesTemplate(res.output_tables, "right");
+  },
+
+  loadTablesTemplate : function(tables, pos) {
+    if (tables && tables.length > 0) {
       var groupHtml = "";
-      res.tables.forEach(function(table) {
+      tables.forEach(function(table) {
         var name = table.table_name;
         groupHtml += "<label for='" + name + "' class='col-form-label'>" + name + "</label>";
         groupHtml += "<input type='checkbox' class='form-control js-table-name' id='" + name + "'>";
       });
 
-      $("#searchModal .js-tables-group").html(groupHtml);
+      $("#search-" + pos + "-modal .js-tables-group").html(groupHtml);
     }
   },
 
   loadTables : function() {
     var names =[];
-    $("#searchModal .js-tables-group .js-table-name").each(function(i, e) {
+    var position = $(this).data("position");
+    var anchor = (position === "left") ? "Right" : "Left";
+    $("#search-" + position + "-modal").find(".js-tables-group .js-table-name").each(function(i, e) {
       if( $(e).is( ":checked" )) {
         names.push($(e).attr("id"));
       }
     });
-    var tables = table_drag.readTables(names);
+    var tables = table_drag.readTables(names, position);
 
-    var position = $(this).data("position");
-    var anchor = (position === "left") ? "Right" : "Left";
     var $field = $(".drawCanvas ." + position + "-field");
     var no = $field.find(".divTable").length
 
     table_drag.buildTableTemplate(tables, position, no);
   },
 
-  readTables : function(names) {
+  readTables : function(names, position) {
     var tables = [];
+    var source_tables = (position == "left") ? table_drag.INPUT_TABLES : table_drag.OUTPUT_TABLES
     names.forEach(function(e) {
-      table_drag.TABLES.forEach(function(ele) {
+      source_tables.forEach(function(ele) {
         if (ele.name == e) {
           tables.push(ele);
         }
@@ -185,7 +198,7 @@ table_drag = {
       var ths = "";
       var columns = [];
       for(var column in firstRow) {
-        columns << column;
+        columns.push(column);
         ths += "<div class = 'divTableTh'>" + column + "</div>";
       }
       $header.append($(ths));
@@ -197,7 +210,7 @@ table_drag = {
 
         for ( var col in rows[row_i]) {
           $row.append('<div id = "' + keyIndex + "_" + columns.indexOf(col) +
-            '" class = "divTableTd"> ' + rows[row_i][col] + '</div>');
+            '" class = "divTableTd" contenteditable="true">' + rows[row_i][col] + '</div>');
         }
 
         $table.append($row);
@@ -208,7 +221,7 @@ table_drag = {
       console.log(table_drag.connStatus);
 
       $card.find(".js-card-title").text(t.name);
-      $card.find(".js-edit-btn").text("編集");
+      $card.find(".js-save-btn").text("保存");
       $card.find(".js-remove-btn").text("削除");
 
       $field.append($card);
@@ -220,7 +233,7 @@ table_drag = {
       });
     });
 
-    $("#searchModal").modal("hide");
+    $("#search-" + position + "-modal").modal("hide");
   },
 
   deleteTableModal : function(e) {
@@ -232,6 +245,69 @@ table_drag = {
 
     $(".js-modal-delete").off("click");
     $(".js-modal-delete").click(function() {
+      $conns.each(function(i, e) {
+        var itemId = $(e).attr("id");
+        jsPlumb.getConnections({source: itemId}).forEach(function(conn) {
+          table_drag.deleteLine(conn);
+        });
+        jsPlumb.getConnections({target: itemId}).forEach(function(conn) {
+          table_drag.deleteLine(conn);
+        });
+
+      });
+
+      $anchors.each(function(i, e) {
+        var itemId = $(e).attr("id");
+        jsPlumb.remove(itemId);
+      });
+
+      $button.parents(".js-card")[0].remove();
+      $('#deleteModal').modal("hide");
+    });
+  },
+
+  saveTableModal : function(e) {
+    var $button = $(e.relatedTarget);
+    var $modal = $(this).parents(".modal");
+    var $card = $($button.parents(".js-card")[0]);
+
+    $(".js-modal-save").off("click");
+    $(".js-modal-save").click(function() {
+      var name = $card.find(".js-card-title").text();
+      var columns = $card.find(".divTableHeader .divTableTh").map(function(index, ele) {
+        return $(ele).text();
+      });
+
+      var table = {};
+      var data = $card.find(".divTableRow").map(function(index, ele) {
+        var cols = $(ele).find(".divTableTd").map(function(colIndex, colEle) {
+          return $(colEle).text();
+        });
+        var rowData = {};
+        for (var col = 0; col < columns.length; col++) {
+          rowData[columns[col]] = cols[col];
+        }
+
+        return rowData;
+      });
+      table["name"] = name;
+      table["data"] = data;
+      console.log(table);
+
+      // TODO send table to backend
+      $('#saveModal').modal("hide");
+    });
+  },
+
+  editTableModal : function(e) {
+    var $button = $(e.relatedTarget);
+    var $modal = $(this).parents(".modal");
+    var $card = $($button.parents(".js-card")[0]);
+    var $conns = $card.find(".divTableRow.jtk-connected");
+    var $anchors = $card.find(".divTableRow.jtk-endpoint-anchor");
+
+    $(".js-modal-confirm").off("click");
+    $(".js-modal-confirm").click(function() {
       $conns.each(function(i, e) {
         var itemId = $(e).attr("id");
         jsPlumb.getConnections({source: itemId}).forEach(function(conn) {
@@ -315,17 +391,6 @@ table_drag = {
       });
     });
 
-  },
-
-  searchDB : function() {
-    return newTableInfo = {
-        "name": "入力2",
-        "detail": [
-                  ["項目1-1","項目1-2"],
-                  ["項目2-1","項目2-2"],
-          ["項目3-1","項目3-2"]
-        ]
-    }
   },
 
   // 線削除

@@ -4,8 +4,7 @@
     margin: 0 0 0 50px;
     padding: 50px 50px;
     border: 1px solid #e7e7e7;
-		width: 1200px;
-		overflow: auto;
+    overflow: auto;
 }
 
 .table-left, .table-right{
@@ -53,7 +52,7 @@ button#addOutput{
 
 
 .divTableTh,.divTableTd{
-	padding: 6px 8px;
+	padding: 10px 12px;
 	display:table-cell;
 }
 
